@@ -199,8 +199,8 @@ class Contractor(object):
         self.query_address = None
 
         self.query_entry = None
-        self.query_by = tk.StringVar()
-        self.query_by.set('name')
+        self.query_by = tk.IntVar()
+        self.query_by.set(0)
 
         self.login()
         # self.main_frame()
@@ -364,7 +364,7 @@ class Contractor(object):
 
         self.buttons()
 
-        self.table.bind('<Double-1>', self.on_update_data)
+        self.table.bind('<Double-1>', self.on_update)
         # self.table.bind('<ButtonRelease-1>', self.on_mouse_click)
         # self.table.bind('<Enter>', self.on_cursor_enter)
         # self.table.bind('<Leave>', self.on_cursor_leave)
@@ -412,7 +412,7 @@ class Contractor(object):
         self.scrollbar.config(command=self.table.yview)
 
         self.table.pack(side=tk.TOP, fill=tk.BOTH)
-        self.table.bind('<<TreeviewSelect>>', self.on_selected)
+        # self.table.bind('<<TreeviewSelect>>', self.on_selected)
 
     def on_selected(self, event=None):
         # item = self.table.focus()
@@ -540,8 +540,8 @@ class Contractor(object):
 
         self.data_query += self.data
 
-    def on_append_data(self, event=None):
-        append_dialog = ContractorDialog(parent=self.app, title='新增联系人对话框')
+    def on_append(self, event=None):
+        append_dialog = ContractorDialog(parent=self.app, title='新增')
         contract_info = append_dialog.contract_info
         info_column = [var for var in contract_info.values()]
         if not info_column[0]:
@@ -553,7 +553,7 @@ class Contractor(object):
 
         self.dump()
 
-    def on_remove_data(self, event=None):
+    def on_remove(self, event=None):
         items = self.table.selection()
         if not items:
             tkinter.messagebox.showinfo('提示', '未选中任何记录')
@@ -569,7 +569,7 @@ class Contractor(object):
         self.table.update()
         self.dump()
 
-    def on_update_data(self, event=None):
+    def on_update(self, event=None):
         items = self.table.selection()
         if not items:
             if not event:
@@ -582,75 +582,64 @@ class Contractor(object):
 
         item = items[0]
         old_values = self.table.item(item, 'values')
-        old_info = {
-            'name': old_values[0],
-            'phone': old_values[1],
-            'email': old_values[2],
-            'postcode': old_values[3],
-            'address': old_values[4],
-            'remark': old_values[5]
-        }
+        old_info = dict(zip(self.columns, old_values))
 
-        append_dialog = ContractorDialog(parent=self.app, title='修改联系人对话框', **old_info)
+        append_dialog = ContractorDialog(parent=self.app, title='修改', **old_info)
         new_info = append_dialog.contract_info
 
-        columns = ['name', 'phone', 'email', 'postcode', 'address', 'remark']
-        for column in columns:
+        for column in self.columns:
             self.table.set(item, column=column, value=new_info[column])
         self.table.update()
         self.dump()
 
+    def on_checkbox(self, event=None):
+        query_type = self.query_by.get()
+        if query_type == -1:
+            self.query_entry.config(state='disabled')
+            self.table.focus_set()
+        else:
+            self.query_entry.config(state='normal')
+            self.query_entry.focus_set()
+
+    def on_query(self, event=None):
+        query_type = self.query_by.get()
+        query_word = self.query_entry.get()
+
+        if not query_word:
+            return
+
+        self.data_query.clear()
+        self.data_other.clear()
+        if query_type == -1:
+            self.data_query += self.data
+        else:
+            for one in self.data:
+                if query_word in one[query_type]:
+                    self.data_query.append(one)
+                else:
+                    self.data_other.append(one)
+
+        self.show_data(self.data_query)
+
     def buttons(self):
-        self.query_name = tk.Checkbutton(
-            self.app,
-            text='姓名',
-            variable=self.query_by,
-            onvalue='name',
-            offvalue='',
-            command=self.on_checkbox
-        )
-        self.query_name.place(relx=0.03, rely=0.909)
-        self.query_name.select()
-
-        self.query_phone = tk.Checkbutton(
-            self.app,
-            text='电话',
-            variable=self.query_by,
-            onvalue='phone',
-            offvalue='',
-            command=self.on_checkbox
-        )
-        self.query_phone.place(relx=0.1, rely=0.909)
-
-        self.query_email = tk.Checkbutton(
-            self.app,
-            text='邮箱',
-            variable=self.query_by,
-            onvalue='email',
-            offvalue='',
-            command=self.on_checkbox
-        )
-        self.query_email.place(relx=0.17, rely=0.909)
-
-        self.query_postcode = tk.Checkbutton(
-            self.app,
-            text='邮编',
-            variable=self.query_by,
-            onvalue='postcode',
-            offvalue='',
-            command=self.on_checkbox
-        )
-        self.query_postcode.place(relx=0.24, rely=0.909)
-
-        self.query_address = tk.Checkbutton(
-            self.app,
-            text='地址',
-            variable=self.query_by,
-            onvalue='address',
-            offvalue='',
-            command=self.on_checkbox
-        )
-        self.query_address.place(relx=0.31, rely=0.909)
+        pos_x = 0.03
+        pos_y = 0.909
+        chk_box = []
+        for idx in range(len(self.columns)):
+            chk_box.append(
+                tk.Checkbutton(
+                    self.app,
+                    text=self.column_name[idx],
+                    variable=self.query_by,
+                    onvalue=idx,
+                    offvalue=-1,
+                    command=self.on_checkbox
+                )
+            )
+            chk_box[idx].place(relx=pos_x, rely=pos_y)
+            if idx == 0:
+                chk_box[idx].select()
+            pos_x += 0.07
 
         self.query_entry = tk.Entry(self.app, width=32)
         self.query_entry.place(relx=0.03, rely=0.949)
@@ -658,53 +647,14 @@ class Contractor(object):
         query_btn = ttk.Button(self.app, text='查询', command=self.on_query)
         query_btn.place(relx=0.38, rely=0.95)
 
-        append_btn = ttk.Button(self.app, text='新增', command=self.on_append_data)
+        append_btn = ttk.Button(self.app, text='新增', command=self.on_append)
         append_btn.place(relx=0.58, rely=0.95)
 
-        remove_btn = ttk.Button(self.app, text='删除', command=self.on_remove_data)
+        remove_btn = ttk.Button(self.app, text='删除', command=self.on_remove)
         remove_btn.place(relx=0.68, rely=0.95)
 
-        update_btn = ttk.Button(self.app, text='修改', command=self.on_update_data)
+        update_btn = ttk.Button(self.app, text='修改', command=self.on_update)
         update_btn.place(relx=0.78, rely=0.95)
-
-    def on_checkbox(self, event=None):
-        query_type = self.query_by.get()
-        if query_type:
-            self.query_entry.config(state='normal')
-            self.query_entry.focus_set()
-        else:
-            self.query_entry.config(state='disabled')
-            self.table.focus_set()
-
-    def on_query(self, event=None):
-        query_type = self.query_by.get()
-        query_word = self.query_entry.get()
-
-        self.data_query.clear()
-        self.data_other.clear()
-        if not query_type:
-            self.data_query += self.data
-        else:
-            for one in self.data:
-                if query_type == 'name':
-                    idx = 0
-                elif query_type == 'phone':
-                    idx = 1
-                elif query_type == 'email':
-                    idx = 2
-                elif query_type == 'postcode':
-                    idx = 3
-                elif query_type == 'address':
-                    idx = 4
-                else:
-                    idx = 0
-
-                if query_word in one[idx]:
-                    self.data_query.append(one)
-                else:
-                    self.data_other.append(one)
-
-        self.show_data(self.data_query)
 
     def on_mouse_click(self, event=None):
         rowid = self.table.identify_row(event.y)
