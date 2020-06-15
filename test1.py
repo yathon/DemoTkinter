@@ -179,24 +179,16 @@ class Contractor(object):
         self.app = tk.Tk()
 
         self.table = None
-        self.data = []
-        self.data_query = []
-        self.data_other = []
         self.scrollbar = None
         self.index = 1
-        self.app.title('我的程序-通讯录管理系统')
-
-        self.cursor_y = 0
-        self.table_row_height = 18
+        self.app.title('通讯录管理系统')
 
         self.img = None
         self.login_notice = None
 
-        self.query_name = None
-        self.query_phone = None
-        self.query_email = None
-        self.query_postcode = None
-        self.query_address = None
+        self.data = []
+        self.data_query = []
+        self.data_other = []
 
         self.query_entry = None
         self.query_by = tk.IntVar()
@@ -204,6 +196,9 @@ class Contractor(object):
 
         self.login()
         # self.main_frame()
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.app.destroy()
 
     def login(self):
         item_list = []
@@ -351,7 +346,13 @@ class Contractor(object):
 
     def main_frame(self):
         # 基础属性
-        width = 860
+        width = 10
+        for one in self.column_width:
+            width += one
+
+        if width < 800:
+            width = 800
+
         height = 600
         self.app.geometry(f'{width}x{height}+100+100')
         self.app.maxsize(width=width, height=height)
@@ -655,32 +656,6 @@ class Contractor(object):
         for cursor in cursors:
             lb = tk.Label(self.app, text=cursor, cursor=cursor)
             lb.pack()
-
-    def on_mouse_click(self, event=None):
-        rowid = self.table.identify_row(event.y)
-        item_text = self.table.item(rowid, 'values')
-        print(item_text)
-
-    def on_cursor_enter(self, event=None):
-        rowid = self.table.identify_row(event.y)
-        item_text = self.table.item(rowid, 'values')
-        if item_text:
-            print(item_text)
-
-    def on_cursor_move(self, event=None):
-        if abs(event.y - self.cursor_y) < self.table_row_height - 5:
-            return
-        self.cursor_y = event.y
-        rowid = self.table.identify_row(event.y)
-        item_text = self.table.item(rowid, 'values')
-        if item_text:
-            print(item_text)
-
-    def on_cursor_leave(self, event=None):
-        rowid = self.table.identify_row(event.y)
-        item_text = self.table.item(rowid, 'values')
-        if item_text:
-            print(item_text)
 
 
 def main():
